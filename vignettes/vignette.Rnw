@@ -1,0 +1,121 @@
+\documentclass[a4paper]{article}
+
+\usepackage{url}
+%\VignetteIndexEntry{The mpdar package vignette}
+
+\title{The mpda package vignette}
+\author{Lars Snipen}
+\date{}
+
+
+
+\begin{document}
+%\SweaveOpts{concordance=TRUE}
+
+\maketitle
+
+
+\section{Introduction}
+This package is an implementation of simple methods for classification based on PLS and LDA. It also includes an algorithm for variable selection in this setting, based on the principle algorithm that we published in \url{http://www.ncbi.nlm.nih.gov/pubmed/22142365}. It deviates from the publiscation by using the \texttt{pda()} instead of the \texttt{cppls()} from the \texttt{pls}-package, and by running the selection 'to the end' in order to see the entire selection process before deciding on the final model. Below we describe how to use the functions in this package.
+
+
+
+\section{Example data}
+A variable selection problem means we search systematically for some subset of variables who are capable of predicting some response variable as good as possible. Thus, we are in the setting of a pattern recognition problem, using some kind of supervised learning algorithm. There are endless examples of such problems. We focus here on an example data set in this package.
+
+The \texttt{microbiome} data set consists of bacterial samples collected from various body-fluids or sites for 100 persons. The samples have been subject to targeted sequencing of the 16S rRNA gene. All 16S marker reads have been given taxonomic classification, i.e. each read has been assigned to some prokaryotic genus. For each genus is counted the number of reads, and for each sample we have a vector of proportions (normalized read-counts to 1.0). We load the data set:
+<<eval=TRUE>>=
+library(mpda)
+data(microbiome)
+@
+
+The first column of this \texttt{data.frame} hold the class labels, and the ramining columns the taxonomic profiles we will use as predictors.
+<<eval=TRUE>>=
+y.all <- microbiome[,1]             # Class labels (body fluid)
+X.all <- as.matrix(microbiome[,-1]) # Taxonomic profiles
+@
+
+We can make some brief inspection of the data:
+<<eval=TRUE>>=
+table(y.all)
+@
+which means we have equal number of samples of each class. We also verify that we have 100 microbiome profiles, each having 1005 values (transformed genus read-count) in \texttt{microbiome.X}:
+<<eval=TRUE>>=
+dim(X.all)
+@
+
+Before we proceed, we only consider the sub-problem with 2 categorical class-labels. This formas the basis for the following methods. Let us consider only the first 40 samples from above, those from either \texttt{Oral} or \texttt{Fecal} body.fluids:
+<<eval=TRUE>>=
+y <- y.all[1:40]
+X <- X.all[1:40,]
+@
+The pattern recognition problem is as follows: Find a rule that discriminates \texttt{Oral} from \texttt{Fecal}  samples based on the (patterns in the) taxonomic profiles. For this we need a supervised learning algorithm.
+
+
+\section{The \texttt{pda()} function}
+This is a simple implementation that combines two commonly used supervised learning methods, working in sequence.
+
+First, the PLS method is used to reduce the dimension of the variable-space from 1005 to something much smaller. PLS will search for linear combinations of the original variables that explains the response. Since PLS can only work with numerical responses, the factor response is dummy-coded as 0's and 1's. This step uses the \texttt{plsr()} function from the \texttt{pls}-package, with the \texttt{oscorespls} algorithm.
+
+Next, the scores from the PLS-step are used as the alternative explanatory variables in a standard LDA, using the \texttt{lda()} function in the \texttt{MASS}-package. One LDA-model is fitted for each possible choice of dimension.
+
+Here is an example of how to use \texttt{pda}:
+<<eval=TRUE>>=
+trained.mod <- pda(y,X,prior=c(1,1),max.dim=5)
+summary(trained.mod$PLS)
+summary(trained.mod$LDA)
+@
+The \texttt{prior} indicates our prior belief in observing the two classes. Usually this is flat (like here), i.e. both classes are equally likely. Since we used \texttt{max.dim=5} we get trained PLS-models for 1 to 5 dimensions, and corresponding trained LDA models in a list of length 5.
+
+If we have collected new taxonomix profiles, we can now classify these using the trained model from above. Since we have no such new data, we use the same data again:
+<<eval=TRUE>>=
+lst <- predict(trained.mod,newdata=X)
+y.hat <- lst[[2]]$Classifications
+confusion.matrix <- table(y,y.hat)
+print(confusion.matrix)
+@
+Here we decided to use the 2-dimension model (\texttt{lst[[2]]}) and compared its \texttt{Classifications} to the actual response. We can see the classification was perfect, however, this is not a proper prediction since we used the same data for training.
+
+
+
+\section{Regularization - the \texttt{pdaDim()} function}
+Deciding on the optimal dimension is crucial in any PLS-based method, like \texttt{pda}. The function \texttt{pdaDim} can be used to estimate the number of dimensions to use. It will perform a cross-validation, and compute the classification accuracy for all dimensions from this.
+
+When searching systematically the dimensions 1,2,... there is always a maximum accuracy obtained somewhere, and a too small or too large dimension will be sub-optimal. However, often many different choices of dimension will give more or less the same accuracy, and it is quite random which of these will produce the maximum value in any given data set. In our regularization we seek the \emph{smallest} dimension which gives not significantly poorer accuracy than the maximum. This means we get a much more stable selection of dimension.
+
+The regularization is adjusted by the rejection level of the McNemar-test. This test is used to test if a smaller dimension gives significantly poorer accuracy than the maximum. The smaller the rejection level, the harder regularization. Here is an example with the example data:
+<<eval=TRUE>>=
+lst <- pdaDim(y,X,reg=0.1,prior=c(1,1),max.dim=5)
+@
+Here we used the default value 0.1 for the regularization parameter \texttt{reg}. This resulted in dimension 1 being the optimal, since it has an accuracy of 0.97. The dimension giving maximum accuracy in the present data set can also be selected, by setting \texttt{reg=1.0}, which means any reductions in accuracy are significantly poorer than the maximum:
+<<eval=TRUE>>=
+lst <- pdaDim(y,X,reg=1.0,prior=c(1,1),max.dim=5)
+@
+
+
+
+\section{The Eliminator}
+The function \texttt{eliminator} will use \texttt{pda} and \texttt{pdaDim} functions repeatedly in a search for a subset of the variables that gives stable and good classification.
+
+In the example data we have 1005 variables in \texttt{X}, but it is more than likely that many of these are of little value for discriminating between the body fluids. Which bacteria are the important ones? This is the question that the \texttt{eliminator} deals with.
+
+The basic idea is to start out with all variables, rank them according to some criterion for importance, and eliminate a fraction of the unimportant ones. This is repeated until there are no unimportant variables left. The results of this elimination is then returned, and from this we decide what is the best subset of variables for our purpose, as shown below.
+
+Here is an example, where we use default regularization, setting \texttt{reg=0.1}:
+<<eval=TRUE>>=
+lst <- eliminator(y,X,reg=0.1,prior=c(1,1),max.dim=5)
+@
+We notice the elimination runs all the way to only 1 variable left. But, in order to decide what is optimal we need to inspect the resulting \texttt{lst}. This is a list with 2 matrices inside it. The first matrix, named \texttt{Elimination} gives us the results we need:
+<<eval=TRUE>>=
+print(lst$Elimination)
+@
+For each iteration we get listed the number of variables left, the accuracy achieved in the cross-validation, and the p-value of the McNemar-test. The latter tells us if a drop in performance is significant (small p-value) or not. We notice that at Iteration 23 there is a drop in accuracy from 0.95 to 0.875. The corresponding p-value is around 0.13. It seems like a sensible choice to stop at Iteration 23.
+
+At iteration 23 there are 2 selected variables. The matrix \texttt{Selected} tells us which 2 variables:
+<<eval=TRUE>>=
+print(which(lst$Selected[23,]))
+@
+It turns out that only the two genera \emph{Bacteroides} and \emph{Streptococcus} is enough to distinguish \texttt{Oral} from \texttt{Fecal} samples in the majority of cases.
+
+
+\end{document}

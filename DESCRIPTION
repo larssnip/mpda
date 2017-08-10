@@ -1,0 +1,17 @@
+Encoding: latin1
+Package: mpda
+Type: Package
+Title: Classification in a multivariate setting
+Version: 1.2
+Date: 2017-20-05
+Author: Lars Snipen
+Maintainer: Lars Snipen <lars.snipen@nmbu.no>
+Description: Methods for classification for highly multivariate data sets.
+License: GPL-2
+LazyData: TRUE
+Depends:
+    R (>= 3.2.1),
+    pls,
+    stats,
+    MASS
+RoxygenNote: 5.0.1
