@@ -24,10 +24,9 @@ y <- poems[,1]
 X <- as.matrix(poems[,-1])
 
 }
-\author{
-Lars Snipen.
-}
 \seealso{
 \code{\link{poems}}.
 }
-
+\author{
+Lars Snipen.
+}

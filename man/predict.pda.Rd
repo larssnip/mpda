@@ -36,10 +36,9 @@ lst <- predict(p.trn,newdata=X[1,,drop=FALSE])           # predicting sample 1
 
 
 }
-\author{
-Lars Snipen.
-}
 \seealso{
 \code{\link{pda}}.
 }
-
+\author{
+Lars Snipen.
+}

@@ -3,6 +3,7 @@
 \name{plot.pda}
 \alias{plot.pda}
 \alias{summary.pda}
+\alias{summary.pda}
 \title{Plotting and summary of pda object}
 \usage{
 \method{plot}{pda}(x, y = NULL, col = c("tan3", "slategray3"), pch = c(15,
@@ -55,10 +56,9 @@ plot(p.trn)
 summary(p.trn)
 
 }
-\author{
-Lars Snipen.
-}
 \seealso{
 \code{\link{pda}}.
 }
-
+\author{
+Lars Snipen.
+}

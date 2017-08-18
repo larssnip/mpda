@@ -48,10 +48,9 @@ lst <- predict(mp.trn)
 print(table(y,lst$Classifications))
 
 }
-\author{
-Lars Snipen.
-}
 \seealso{
 \code{\link{mpda}}.
 }
-
+\author{
+Lars Snipen.
+}

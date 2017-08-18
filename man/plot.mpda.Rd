@@ -3,6 +3,7 @@
 \name{plot.mpda}
 \alias{plot.mpda}
 \alias{summary.mpda}
+\alias{summary.mpda}
 \title{Plotting and summary of mpda object}
 \usage{
 \method{plot}{mpda}(x, y = NULL, col = c("tan3", "slategray3"), pch = 15,
@@ -51,10 +52,9 @@ plot(mp.trn)
 summary(mp.trn)
 
 }
-\author{
-Lars Snipen.
-}
 \seealso{
 \code{\link{mpda}}.
 }
-
+\author{
+Lars Snipen.
+}

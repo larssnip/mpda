@@ -26,10 +26,9 @@ y <- microbiome[,1]
 X <- as.matrix(microbiome[,-1])
 
 }
-\author{
-Lars Snipen.
-}
 \seealso{
 \code{\link{poems}}.
 }
-
+\author{
+Lars Snipen.
+}

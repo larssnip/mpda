@@ -27,9 +27,6 @@ problem, which means a two-class classification problem.
 A large VIP indicates the corresponding variable is important. A threshold at 1.0 is often
 used, variables with VIP above 1.0 are the important ones.
 }
-\author{
-Lars Snipen.
-}
 \references{
 Chong, Il-Gyo & Jun, Chi-Hyuck, 2005, Performance of some variable selection
 methods when multicollinearity is present, Chemometrics and Intelligent Laboratory
@@ -38,4 +35,6 @@ Systems 78, 103--112.
 \seealso{
 \code{\link{eliminator}}.
 }
-
+\author{
+Lars Snipen.
+}

@@ -70,10 +70,9 @@ X <- as.matrix(poems[,-1])
 mp.trn <- mpda(y,X,prior=c(1,1,1),max.dim=10)
 
 }
-\author{
-Lars Snipen.
-}
 \seealso{
 \code{\link{predict.mpda}}, \code{\link{pdaDim}}.
 }
-
+\author{
+Lars Snipen.
+}

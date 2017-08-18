@@ -3,7 +3,7 @@ Package: mpda
 Type: Package
 Title: Classification in a multivariate setting
 Version: 1.2
-Date: 2017-20-05
+Date: 2017-08-10
 Author: Lars Snipen
 Maintainer: Lars Snipen <lars.snipen@nmbu.no>
 Description: Methods for classification for highly multivariate data sets.
@@ -14,4 +14,4 @@ Depends:
     pls,
     stats,
     MASS
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

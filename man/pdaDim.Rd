@@ -62,9 +62,6 @@ X <- as.matrix(microbiome[1:40,-1])
 lst <- pdaDim(y,X,reg=0.1,prior=c(0.5,0.5),max.dim=10)
 
 }
-\author{
-Lars Snipen.
-}
 \references{
 Indahl, UG, Naes, T (1998). Evaluation of alternative spectral feature
 extraction methods of textural images for multivariate modeling. J. Chemometrics, 12:261-278.
@@ -72,4 +69,6 @@ extraction methods of textural images for multivariate modeling. J. Chemometrics
 \seealso{
 \code{\link{eliminator}}, \code{\link{mpda}}.
 }
-
+\author{
+Lars Snipen.
+}

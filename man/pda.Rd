@@ -69,10 +69,9 @@ selection[c(1,5,9,15,21)] <- TRUE   # using letters a, e, i, o and u only
 p.trn <- pda(y,X,prior=c(1,1),selected=selection)
 
 }
-\author{
-Lars Snipen.
-}
 \seealso{
 \code{\link{predict.pda}}, \code{\link{pdaDim}}.
 }
-
+\author{
+Lars Snipen.
+}
