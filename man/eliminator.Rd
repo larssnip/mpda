@@ -84,9 +84,6 @@ print(lst$Elimination)
 print(which(lst$Selected[23,]))
 
 }
-\author{
-Lars Snipen.
-}
 \references{
 Mehmood, T, Martens, H, Saeboe, S, Warringer, J, Snipen, L (2011). A Partial Least Squares based algorithm
 for parsimonious variable selection. Algorithms for Molecular Biology, 6:27.
@@ -94,4 +91,6 @@ for parsimonious variable selection. Algorithms for Molecular Biology, 6:27.
 \seealso{
 \code{\link{vipCriterion}}, \code{\link{pdaDim}}.
 }
-
+\author{
+Lars Snipen.
+}

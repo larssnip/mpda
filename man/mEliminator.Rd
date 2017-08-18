@@ -68,10 +68,9 @@ mp.trn <- mpda(y,X,prior=c(1,1,1),selected=S,max.dim=10)
 predict(mp.trn)
 
 }
-\author{
-Lars Snipen.
-}
 \seealso{
 \code{\link{eliminator}}, \code{\link{mpda}}.
 }
-
+\author{
+Lars Snipen.
+}
