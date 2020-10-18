@@ -1,0 +1,473 @@
+The mpda R package
+================
+Lars Snipen
+
+  - [Installation](#installation)
+  - [Introduction](#introduction)
+  - [Examples](#examples)
+      - [Data](#data)
+      - [The `pda()` function](#the-pda-function)
+      - [Regularization - the `pdaDim()`
+        function](#regularization---the-pdadim-function)
+      - [The `mpda()` function](#the-mpda-function)
+      - [The `eliminator()` function](#the-eliminator-function)
+      - [Using selections in `mpda()`](#using-selections-in-mpda)
+
+# Installation
+
+To install directly from GitHub you first need to install the packages
+`devtools`. Start R and:
+
+``` r
+install.packages("devtools")
+```
+
+or if you use RStudio, use the meny Tools - Install Packages… You may
+also need the package `githubinstall`. If so, install it the same way as
+above.
+
+Next, you should be able to install this package by
+
+``` r
+devtools::install_github("larssnip/mpda")
+```
+
+# Introduction
+
+This package is an implementation of some simple methods for
+classification based on many predictors, i.e. cases where the number of
+predictors is in the range, or larger than, the number of samples. It
+combines methods from the `pls` package with the classical LDA from the
+`MASS` package. It also includes an algorithm for variable selection in
+this setting, based on the principle algorithm that we published in
+<http://www.ncbi.nlm.nih.gov/pubmed/22142365> (`eliminator()`).
+
+The main idea behind this package is to have simple tools for doing
+classifications in a multivariate setting without having to tune a lot
+of parameters. It could also serve as a ‘baseline approach’, i.e. more
+advanced methods should outcompete these methods, something they not
+always do\!
+
+<!-- It deviates from the publication by using the `pda()` instead of the `cppls()` from the `pls`-package, and by running the selection 'to the end' in order to see the entire selection process before deciding on the final model. Below we describe how to use the functions in this package. -->
+
+<!-- A variable selection problem means we search systematically for some subset of variables who are capable of predicting some response variable as good as possible. Thus, we are in the setting of a pattern recognition problem, using some kind of supervised learning algorithm. There are endless examples of such problems. We focus here on an example data set in this package. -->
+
+# Examples
+
+## Data
+
+Start by loading the package and the `microbiome` data set
+
+``` r
+library(mpda)
+data(microbiome)
+```
+
+This table consists of bacterial samples collected from various
+body-fluids/parts for 100 persons (rows). The columns `Body.fluid`
+indicates this. The samples have been subject to targeted sequencing and
+taxonomic classification and the remaining columns list bacterial genera
+and their relative fraction in each sample.
+
+We use the `Body.fluid` as class labels, and the remaining columns as
+predictors:
+
+``` r
+y <- microbiome[,1]                # Class labels
+X <- as.matrix(microbiome[,-1])    # Predictors, the bacterial composition
+```
+
+We make a brief inspection of the data:
+
+``` r
+print(table(y))
+```
+
+    ## y
+    ##   Fecal   Nasal    Oral    Skin Vaginal 
+    ##      20      20      20      20      20
+
+``` r
+print(dim(X))
+```
+
+    ## [1]  100 1005
+
+We can verify there are 5 classes (body fluids), all having 20 samples,
+and there are 1005 predictors (bacterial genera).
+
+Before we proceed, we only consider the sub-problem with 2 categorical
+class-labels. This forms the basis for the methods in this package. Let
+us consider only the first 40 samples from above, those from `Oral` and
+`Fecal` body fluids:
+
+``` r
+y2 <- y[1:40]
+X2 <- X[1:40,]
+```
+
+**The pattern recognition problem is as follows:** Find a rule that
+discriminates  from  samples based only on the bacterial composition.
+For this we need a supervised learning algorithm.
+
+## The `pda()` function
+
+This is a simple implementation that combines two commonly used
+supervised learning methods, working in sequence.
+
+First, the PLS method is used to reduce the dimension of the
+variable-space from 1005 to something much smaller. Since PLS can only
+work with numerical responses, the factor response is dummy-coded as 0’s
+and 1’s. This step uses the `plsr()` function from the `pls`-package,
+with the `oscorespls` algorithm.
+
+Next, the *scores* from the PLS-step are used as the alternative
+predictors in a standard LDA, using the `lda()` function in the
+`MASS`-package. One LDA-model is fitted for each possible choice of
+dimension.
+
+Here is an example of how to use `pda()`:
+
+``` r
+trained.pda <- pda(y2, X2, prior = c(1,1), max.dim = 5)
+```
+
+The `prior` indicates our prior belief in observing the two classes.
+Usually this is flat (like here), i.e. both classes are equally likely.
+Since we used `max.dim = 5` we get trained PLS-models for 1 to 5
+dimensions, and corresponding trained LDA models. The `trained.mod`
+object is a list with the following content:
+
+  - The fitted PLS object from `plsr()`
+  - A list of fitted LDA-models, one for each dimension in the PLS
+    object
+  - The `Response` variable (vector of class labels)
+  - A list `Selected` which is empty for now
+
+Let us briefly inspect the PLS results of this training:
+
+``` r
+summary(trained.pda$PLS)
+```
+
+    ## Data:    X dimension: 40 1005 
+    ##  Y dimension: 40 1
+    ## Fit method: oscorespls
+    ## Number of components considered: 5
+    ## TRAINING: % variance explained
+    ##        1 comps  2 comps  3 comps  4 comps  5 comps
+    ## X        63.24    68.25    82.45    86.82    89.48
+    ## y.dum    81.91    96.08    96.93    97.87    98.28
+
+This tells us a very large percentage of the response variance is
+explained, i.e. the two class labels are easy to recognize using the
+bacterial composition. We also see that already at 2 components we have
+an almost perfect recognition.
+
+If we have collected new samples, we can now predict the body fluid
+based on the bacterial composition using the trained model from above.
+Since we have no such new data, we use the same data again:
+
+``` r
+pred.pda <- predict(trained.pda, newdata = X2)  # makes predictions for all dimensions
+y.hat <- pred.pda[[2]]$Classifications          # we choose dimension 2
+confusion.matrix <- table(y2, y.hat)            # compare y.hat to y2
+print(confusion.matrix)
+```
+
+    ##        y.hat
+    ## y2      Fecal Oral
+    ##   Fecal    20    0
+    ##   Oral      0   20
+
+Here we decided to use the 2-dimension model (`pred.pda[[2]]`) and
+compared its `Classifications` to the actual class labels. We can see
+the classification was perfect, however, this is not a proper prediction
+since we used the same data for training.
+
+## Regularization - the `pdaDim()` function
+
+Deciding on the optimal dimension is crucial in any PLS-based method,
+like `pda()`. The function `pdaDim()` may be used to estimate the proper
+number of dimensions. It will perform a cross-validation, and compute
+the classification accuracy for all dimensions from this.
+
+When searching systematically the dimensions 1,2,… there is always a
+maximum accuracy obtained somewhere, and a too small or too large
+dimension will usually be sub-optimal. However, often many different
+choices of dimension will give more or less the same accuracy, and it is
+quite random which of these will produce the maximum value in any given
+data set. In our regularization we seek the *smallest* dimension which
+gives *not significantly poorer* accuracy than the maximum. This means
+we get a much more stable selection of dimension.
+
+The regularization is adjusted by the rejection level of the
+McNemar-test. This test is used to test if a smaller dimension gives
+significantly poorer accuracy than the maximum. The smaller the
+rejection level, the harder regularization. Here is an example with the
+data from above:
+
+``` r
+pda.dim <- pdaDim(y2, X2, reg = 0.1, prior = c(1,1), max.dim = 5)
+```
+
+    ## pdaDim:
+    ##   cross-validation...
+    ##    maximum accuracy 1 at 2 dimensions...
+    ##    selected accuracy 0.975 at 1 dimensions
+
+Here we used the default value `0.1` for the regularization parameter
+`reg`.
+
+Note that `pdaDim()` reports maximum accuracy (1.0) was found at 2
+dimensions, but with 1 dimension we get accuracy 0.975, which is not
+significantly poorer, and therefore chosen.
+
+The dimension giving maximum accuracy in the present data set can also
+be selected, by setting `reg = 1.0`, which means any (tiny) reductions
+in accuracy are significantly poorer than the maximum:
+
+``` r
+pda.dim <- pdaDim(y2, X2, reg = 1.0, prior = c(1,1), max.dim = 5)
+```
+
+    ## pdaDim:
+    ##   cross-validation...
+    ##    maximum accuracy 1 at 2 dimensions...
+    ##    selected accuracy 1 at 2 dimensions
+
+The object returned by `pdaDim()` contains the selected dimension in
+`Dimension`. See the Help-file for `pdaDim()` for more details, e.g. the
+use of cross-validation.
+
+## The `mpda()` function
+
+Let us return to the original microbiome data, where we have 5 different
+classes. If you have 3 or more classes, you must use the `mpda()`
+(multi-`pda`) function instead of the `pda()` we saw above. The `mpda()`
+will then use `pda()` on all possible two-class sub problems, i.e. in
+our case of the 5 body fluids, it will fit 10 different `pda` models,
+one for each pair.
+
+Since we now fit several PLS-models, to different data, it seems
+sub-optimal to specify one dimension to be used all over. It may very
+well be that dimension 1 is optimal for separating `Oral` from `Fecal`,
+but dimension 2 is optimal for separating `Oral` from `Nasal`, etc.
+Thus, we let `mpda()` use the `pdaDim()` to find a proper dimension for
+each of the `pda` models. Here is how we train using `mpda()`:
+
+``` r
+trained.mpda <- mpda(y, X, prior = c(1,1,1,1,1), max.dim = 5)
+```
+
+    ## mdpa: Response with 5 levels: Fecal Nasal Oral Skin Vaginal 
+    ## The priors: 0.2 0.2 0.2 0.2 0.2 
+    ##    fitting Fecal versus Nasal ...
+    ##    fitting Fecal versus Oral ...
+    ##    fitting Fecal versus Skin ...
+    ##    fitting Fecal versus Vaginal ...
+    ##    fitting Nasal versus Oral ...
+    ##    fitting Nasal versus Skin ...
+    ##    fitting Nasal versus Vaginal ...
+    ##    fitting Oral versus Skin ...
+    ##    fitting Oral versus Vaginal ...
+    ##    fitting Skin versus Vaginal ...
+
+We recognize the `prior` and `max.dim` from `pda()`. The output shows
+how the various models are trained. We can also specify the `reg` option
+used by `pdaDm()` inside `mpda()`, see the Help-file for `mpda()` for
+more details.
+
+Again we can predict using the trained model and new data, and again we
+simply use the training data as ‘new data’:
+
+``` r
+pred.mpda <- predict(trained.mpda, newdata = X)  # makes predictions
+y.hat <- pred.mpda$Classifications               # dimensions have been chosen by pdaDim
+confusion.matrix <- table(y, y.hat)              # compare y.hat to y
+print(confusion.matrix)
+```
+
+    ##          y.hat
+    ## y         Fecal Nasal Oral Skin Vaginal
+    ##   Fecal      19     0    0    0       1
+    ##   Nasal       0    18    0    2       0
+    ##   Oral        0     0   20    0       0
+    ##   Skin        0     3    0   17       0
+    ##   Vaginal     0     0    0    0      20
+
+We observe that classifications are good but no longer perfect, which is
+not surprising given the more complex problem.
+
+## The `eliminator()` function
+
+This function will use `pda()` and `pdaDim()` functions repeatedly in a
+search for a subset of the variables that gives stable and good
+classification. Note that this works only for `pda()` not `mpda()`. Why
+not? Well, the argument is the same as for *not* using the same
+dimension for all sub-models in `mpda()`; What is optimal for one
+sub-model may not be optimal for another. It is still possible to
+utilize the results from `eliminator()` in the `mpda()`, as shown below.
+
+We now return to the two-class problem again, separating `Oral` from
+`Fecal`. In the example data we have 1005 variables in `X2`, but it is
+more than likely that many of these are of little value for
+discriminating between the body fluids. Which variables are the
+important ones? This is the question that the `eliminator()` deals with.
+
+The basic idea is to start out with all variables (predictors), rank
+them according to some criterion for importance, and eliminate a
+fraction of the unimportant ones. This is repeated until there are no
+unimportant (or 1) variables left. The results of this elimination is
+then returned, and from this we decide what is the best subset of
+predictors for our purpose, as shown below.
+
+Here is an example, where we use default regularization, setting `reg
+= 0.1`:
+
+``` r
+elim.obj <- eliminator(y2, X2, reg = 0.1, prior = c(1,1), max.dim = 5)
+```
+
+    ## The Eliminator:
+    ##    full model has 1005 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 758 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 572 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 432 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 327 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 248 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 189 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 144 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 109 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 83 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 63 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 48 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 36 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 27 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 20 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 15 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 11 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 8 variables, accuracy = 0.975 using 1 dimensions
+    ##    eliminated to 6 variables, accuracy = 0.95 using 1 dimensions
+    ##    eliminated to 5 variables, accuracy = 0.95 using 1 dimensions
+    ##    eliminated to 4 variables, accuracy = 0.95 using 1 dimensions
+    ##    eliminated to 3 variables, accuracy = 0.95 using 1 dimensions
+    ##    eliminated to 2 variables, accuracy = 0.95 using 1 dimensions
+    ##    eliminated to 1 variables, accuracy = 0.875 using 1 dimensions
+
+We notice the elimination runs all the way to only 1 variable is left.
+But, in order to decide what is optimal we need to inspect the resulting
+`elim.obj`. This is a list with two matrices inside it. The first
+matrix, named `Elimination` gives us the results we need:
+
+``` r
+print(elim.obj$Elimination)
+```
+
+    ##              N.variables Accuracy   P.value
+    ## Iteration 1         1005    0.975 1.0000000
+    ## Iteration 2          758    0.975 1.0000000
+    ## Iteration 3          572    0.975 1.0000000
+    ## Iteration 4          432    0.975 1.0000000
+    ## Iteration 5          327    0.975 1.0000000
+    ## Iteration 6          248    0.975 1.0000000
+    ## Iteration 7          189    0.975 1.0000000
+    ## Iteration 8          144    0.975 1.0000000
+    ## Iteration 9          109    0.975 1.0000000
+    ## Iteration 10          83    0.975 1.0000000
+    ## Iteration 11          63    0.975 1.0000000
+    ## Iteration 12          48    0.975 1.0000000
+    ## Iteration 13          36    0.975 1.0000000
+    ## Iteration 14          27    0.975 1.0000000
+    ## Iteration 15          20    0.975 1.0000000
+    ## Iteration 16          15    0.975 1.0000000
+    ## Iteration 17          11    0.975 1.0000000
+    ## Iteration 18           8    0.975 1.0000000
+    ## Iteration 19           6    0.950 1.0000000
+    ## Iteration 20           5    0.950 1.0000000
+    ## Iteration 21           4    0.950 1.0000000
+    ## Iteration 22           3    0.950 1.0000000
+    ## Iteration 23           2    0.950 1.0000000
+    ## Iteration 24           1    0.875 0.1336144
+
+For each iteration we get listed the number of predictors left, the
+accuracy achieved in the cross-validation, and the p-value of the
+McNemar-test. The latter tells us if a drop in performance is
+significant (small p-value) or not. We notice that at Iteration 24 there
+is a drop in accuracy from 0.95 to 0.875. The corresponding p-value is
+around 0.13. It seems like a sensible choice to stop at Iteration 23.
+
+At iteration 23 there are 2 selected variables. The matrix `Selected`
+tells us which variables:
+
+``` r
+print(which(elim.obj$Selected[23,]))
+```
+
+    ##   Bacteroides Streptococcus 
+    ##           133           879
+
+It turns out that only the two genera *Bacteroides* and *Streptococcus*
+is enough to distinguish `Oral` from `Fecal` samples in the majority of
+cases.
+
+## Using selections in `mpda()`
+
+The `mpda()` takes an option `selected` which is a matrix of logicals
+with the same number of columns as `X` and with one row for each class
+pair.
+
+Above we used the `eliminator()` on the pair `Oral` versus `Fecal`.
+Previously, we used `mpda()` to train a model for all pairs. It is
+important that we now know the factor levels of the classes we have
+used. This is stored as an attribute to any trained `mpda` object:
+
+``` r
+print(attr(trained.mpda, "Levels"))
+```
+
+    ## [1] "Fecal"   "Nasal"   "Oral"    "Skin"    "Vaginal"
+
+We note that `Fecal` has level 1 and `Oral` has level 3. When specifying
+the selected variables to `mpda()` this is done by the option
+`selected`. This must be a matrix where each row corresponds to a pair
+of classes. The first row is the model of class 1 versus 2, then class 1
+versus 3,…class 1 versus 5, class 2 versus 3,…,class 4 versus 5. Thus,
+in our case it is row 2 we specify.
+
+The matrix `selected` must be a logical matrix have one column for each
+column in `X`. We can create it like:
+
+``` r
+sel.mat <- matrix(TRUE, nrow = length(trained.mpda), ncol = ncol(X))
+```
+
+By using `TRUE` all over, we select all predictors for all models,
+i.e. the same as not selecting at all. We now replace row 2 by the
+selection we got from `eliminator()`:
+
+``` r
+sel.mat[2,] <- elim.obj$Selected[23,]
+```
+
+Then, we can re-run `mpda()` with this restriction:
+
+``` r
+trained.mpda <- mpda(y, X, prior = c(1,1,1,1,1), max.dim = 5, selected = sel.mat)
+```
+
+    ## mdpa: Response with 5 levels: Fecal Nasal Oral Skin Vaginal 
+    ## The priors: 0.2 0.2 0.2 0.2 0.2 
+    ##    fitting Fecal versus Nasal ...
+    ##    fitting Fecal versus Oral ...
+    ##    fitting Fecal versus Skin ...
+    ##    fitting Fecal versus Vaginal ...
+    ##    fitting Nasal versus Oral ...
+    ##    fitting Nasal versus Skin ...
+    ##    fitting Nasal versus Vaginal ...
+    ##    fitting Oral versus Skin ...
+    ##    fitting Oral versus Vaginal ...
+    ##    fitting Skin versus Vaginal ...
+
+In reality you would most likely run the `eliminator()` on all pairs of
+responses, and edit all rows in the `selected` matrix.

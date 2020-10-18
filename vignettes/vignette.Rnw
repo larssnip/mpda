@@ -1,7 +1,7 @@
 \documentclass[a4paper]{article}
 
 \usepackage{url}
-%\VignetteIndexEntry{The mpdar package vignette}
+%\VignetteIndexEntry{The mpda package vignette}
 
 \title{The mpda package vignette}
 \author{Lars Snipen}
@@ -14,9 +14,6 @@
 
 \maketitle
 
-
-\section{Introduction}
-This package is an implementation of simple methods for classification based on PLS and LDA. It also includes an algorithm for variable selection in this setting, based on the principle algorithm that we published in \url{http://www.ncbi.nlm.nih.gov/pubmed/22142365}. It deviates from the publiscation by using the \texttt{pda()} instead of the \texttt{cppls()} from the \texttt{pls}-package, and by running the selection 'to the end' in order to see the entire selection process before deciding on the final model. Below we describe how to use the functions in this package.
 
 
 

@@ -3,10 +3,10 @@ Package: mpda
 Type: Package
 Title: Classification in a multivariate setting
 Version: 1.2
-Date: 2017-08-10
+Date: 2020-10-18
 Author: Lars Snipen
 Maintainer: Lars Snipen <lars.snipen@nmbu.no>
-Description: Methods for classification for highly multivariate data sets.
+Description: Methods for classification for highly multivariate data sets, using PLS and LDA.
 License: GPL-2
 LazyData: TRUE
 Depends:
