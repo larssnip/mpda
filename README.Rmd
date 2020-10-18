@@ -63,7 +63,7 @@ y2 <- y[1:40]
 X2 <- X[1:40,]
 ```
 
-**The pattern recognition problem is as follows:** Find a rule that discriminates \texttt{Oral} from \texttt{Fecal} samples based only on the bacterial composition. For this we need a supervised learning algorithm.
+**The pattern recognition problem is as follows:** Find a rule that discriminates `Oral` from `Fecal` samples based only on the bacterial composition. For this we need a supervised learning algorithm.
 
 
 

@@ -107,8 +107,8 @@ X2 <- X[1:40,]
 ```
 
 **The pattern recognition problem is as follows:** Find a rule that
-discriminates  from  samples based only on the bacterial composition.
-For this we need a supervised learning algorithm.
+discriminates `Oral` from `Fecal` samples based only on the bacterial
+composition. For this we need a supervised learning algorithm.
 
 ## The `pda()` function
 
