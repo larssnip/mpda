@@ -4,8 +4,16 @@
 \alias{mpda}
 \title{Multi-level pattern recognition with PLS+LDA}
 \usage{
-mpda(y, X, reg = 0.5, prior = NULL, selected = NULL, max.dim = NULL,
-  n.seg = 10, verbose = TRUE)
+mpda(
+  y,
+  X,
+  reg = 0.5,
+  prior = NULL,
+  selected = NULL,
+  max.dim = NULL,
+  n.seg = 10,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{y}{Vector of responses, must be a factor with 3 or more levels.}
@@ -67,7 +75,7 @@ Row N: Factor level (L-1) versus L
 data(poems)
 y <- poems[,1]
 X <- as.matrix(poems[,-1])
-mp.trn <- mpda(y,X,prior=c(1,1,1),max.dim=10)
+mp.trn <- mpda(y, X, prior = c(1,1,1), max.dim = 10)
 
 }
 \seealso{

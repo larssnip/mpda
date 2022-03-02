@@ -48,54 +48,54 @@
 #'
 #' @examples
 #' data(microbiome)
-#' y <- microbiome[1:40,1]
-#' X <- as.matrix(microbiome[1:40,-1])
-#' m.trn <- pda(y,X,prior=c(0.5,0.5),max.dim=10)
+#' y <- microbiome[1:40, 1]
+#' X <- as.matrix(microbiome[1:40, -1])
+#' m.trn <- pda(y, X, prior = c(0.5,0.5), max.dim = 10)
 #'
 #' data(poems)
-#' y <- factor(poems[11:28,1],levels=c("Blake","Eliot"))
-#' X <- as.matrix(poems[11:28,-1])
-#' selection <- rep(FALSE,ncol(X))
+#' y <- factor(poems[11:28,1], levels = c("Blake","Eliot"))
+#' X <- as.matrix(poems[11:28, -1])
+#' selection <- rep(FALSE, ncol(X))
 #' selection[c(1,5,9,15,21)] <- TRUE   # using letters a, e, i, o and u only
-#' p.trn <- pda(y,X,prior=c(1,1),selected=selection)
+#' p.trn <- pda(y, X, prior = c(1,1), selected = selection)
 #'
 #' @importFrom pls plsr
 #' @importFrom MASS lda
 #'
 #' @export pda
 #'
-pda <- function( y, X, prior=NULL, max.dim=NULL, selected=NULL ){
-  if( !is.null( selected ) ){
-    if( length( selected ) != ncol(X) ) stop( "Argument selected must have ncol(X) elements" )
-    X <- X[,which( selected ),drop=F]
+pda <- function(y, X, prior = NULL, max.dim = NULL, selected = NULL){
+  if(!is.null(selected)){
+    if(length(selected) != ncol(X)) stop("Argument selected must have ncol(X) elements")
+    X <- X[, which( selected ), drop= F]
   }
-  N <- nrow( X )
-  P <- ncol( X )
-  if( is.null( max.dim ) ) max.dim <- min( N-1, P-1 )
-  max.dim <- min( N, P, max.dim )
-  if( !is.factor( y ) ) y <- factor( y )
-  lev <- levels( y )
-  L <- length( lev )
-  if( L != 2 ) stop( "Cannot have more than 2 factor levels in pda, use mpda for multi-level classification" )
-  y.dum <- as.numeric( y ) - 1
+  N <- nrow(X)
+  P <- ncol(X)
+  if(is.null(max.dim)) max.dim <- min(N-1, P-1)
+  max.dim <- min(N, P, max.dim)
+  if(!is.factor(y)) y <- factor(y)
+  lev <- levels(y)
+  L <- length(lev)
+  if(L != 2) stop("Cannot have more than 2 factor levels in pda, use mpda for multi-level classification")
+  y.dum <- as.numeric(y) - 1
 
   # The PLS step
-  pls.mod <- plsr( y.dum~X, ncomp=max.dim, method="oscorespls", validation="none" )
+  pls.mod <- plsr(y.dum ~ X, ncomp = max.dim, method = "oscorespls", validation = "none")
   Z <- pls.mod$scores
 
   # The LDA step
-  if( is.null( prior) ){
-    prior <- as.numeric( table( y )/length( y ) )
+  if(is.null(prior)){
+    prior <- as.numeric(table(y)/length(y))
   } else {
-    prior <- prior/sum( prior )
+    prior <- prior/sum(prior)
   }
-  lda.mod.lst <- vector( "list", max.dim )
-  for( i in 1:max.dim ){
-    lda.mod.lst[[i]] <- lda( Z[,1:i,drop=F], y, prior=prior, tol=1e-12 )
+  lda.mod.lst <- vector("list", max.dim)
+  for(i in 1:max.dim){
+    lda.mod.lst[[i]] <- lda(Z[, 1:i, drop = F], y, prior = prior, tol = 1e-12)
   }
-  pda.mod <- list( PLS=pls.mod, LDA=lda.mod.lst, Response=y, Selected=selected )
-  class( pda.mod ) <- c( "pda", "list" )
-  return( pda.mod )
+  pda.mod <- list(PLS = pls.mod, LDA = lda.mod.lst, Response = y, Selected = selected)
+  class(pda.mod) <- c("pda", "list")
+  return(pda.mod)
 }
 
 
@@ -126,36 +126,36 @@ pda <- function( y, X, prior=NULL, max.dim=NULL, selected=NULL ){
 #' @examples
 #' data(microbiome)
 #' y <- microbiome[1:40,1]
-#' X <- as.matrix(microbiome[1:40,-1])
-#' p.trn <- pda(y[-1],X[-1,],prior=c(0.5,0.5),max.dim=8)    # leaving out sample 1 before training
-#' lst <- predict(p.trn,newdata=X[1,,drop=FALSE])           # predicting sample 1
+#' X <- as.matrix(microbiome[1:40, -1])
+#' p.trn <- pda(y[-1], X[-1,], prior = c(0.5,0.5), max.dim = 8)    # leaving out sample 1 before training
+#' lst <- predict(p.trn, newdata = X[1, , drop = FALSE])           # predicting sample 1
 #'
 #'
 #' @importFrom stats predict
 #'
 #' @method predict pda
 #' @export
-predict.pda <- function( object, newdata=NULL, ... ){
-  if( is.null( newdata ) ){
+predict.pda <- function(object, newdata=NULL, ... ){
+  if(is.null(newdata)){
     newdata <- object$PLS$model$X
   } else {
-    if( !is.null( object$Selected ) ){
-      newdata <- newdata[,which( object$Selected ),drop=F]
+    if(!is.null(object$Selected)){
+      newdata <- newdata[, which(object$Selected), drop = F]
     }  # else use all columns
   }
 
   # The PLS step
-  Z <- predict( object$PLS, newdata, type="scores" )
+  Z <- predict(object$PLS, newdata, type = "scores")
   p <- object$PLS$ncomp
 
   # The LDA step
-  pda.lst <- vector( "list", p )
-  for( i in 1:p ){
-    lda.hat <- predict( object$LDA[[i]], Z[,1:i,drop=F], ... )
-    pda.lst[[i]] <- list( Dimension=i,
-                          Classifications=lda.hat$class,
-                          Posteriors=lda.hat$posterior,
-                          Scores=Z[,1:i,drop=F] )
+  pda.lst <- vector("list", p)
+  for(i in 1:p){
+    lda.hat <- predict(object$LDA[[i]], Z[, 1:i, drop = F], ...)
+    pda.lst[[i]] <- list(Dimension = i,
+                         Classifications = lda.hat$class,
+                         Posteriors = lda.hat$posterior,
+                         Scores = Z[,1:i,drop = F])
   }
   return( pda.lst )
 }
@@ -207,35 +207,35 @@ predict.pda <- function( object, newdata=NULL, ... ){
 #'
 #' @method plot pda
 #' @export
-plot.pda <- function( x, y=NULL, col=c("tan3","slategray3"), pch=c(15,15), legend.pos="topright",
-                      xlab="PLS dimension 1", ylab="PLS dimension 2", ... ){
+plot.pda <- function(x, y = NULL, col = c("tan3","slategray3"), pch = c(15,15), legend.pos = "topright",
+                     xlab = "PLS dimension 1", ylab = "PLS dimension 2", ...){
   Z <- x$PLS$scores
-  n <- nrow( Z )
-  p <- ncol( Z )
-  y <- as.character( x$Response )
-  lev <- levels( x$Response ) #unique( y )
-  cols <- col[as.numeric( x$Response )] #factor( y ) )]
+  n <- nrow(Z)
+  p <- ncol(Z)
+  y <- as.character(x$Response)
+  lev <- levels(x$Response) #unique( y )
+  cols <- col[as.numeric(x$Response)] #factor( y ) )]
   xx <- Z[,1]
-  if( p > 1 ){
+  if(p > 1){
     yy <- Z[,2]
-    y.axt="s"
+    y.axt = "s"
   } else {
-    yy <- as.numeric( x$Response )
+    yy <- as.numeric(x$Response)
     ylab <- ""
-    y.axt="n"
+    y.axt <- "n"
   }
-  plot( xx, yy, pch=pch, col=cols, xlab=xlab, ylab=ylab, yaxt=y.axt, ... )
-  legend( x=legend.pos, legend=lev, col=col, pch=pch )
+  plot(xx, yy, pch = pch, col = cols, xlab = xlab, ylab = ylab, yaxt = y.axt, ...)
+  legend(x = legend.pos, legend = lev, col = col, pch = pch)
 }
 
 #' @rdname plot.pda
 #' @method summary pda
 #' @export
-summary.pda <- function( object, ... ){
-  lev <- levels( object$Response )
-  cat( "Fitted pda model with responses: ", lev[1], " (", sum(object$Response==lev[1]), ") and ",
-       lev[2], " (", sum(object$Response==lev[2]), ")\n", sep="" )
-  cat( "using", length(object$LDA), "PLS-dimensions and priors:", object$LDA[[1]]$prior, "\n" )
+summary.pda <- function(object, ...){
+  lev <- levels(object$Response)
+  cat("Fitted pda model with responses: ", lev[1], " (", sum(object$Response == lev[1]), ") and ",
+      lev[2], " (", sum(object$Response == lev[2]), ")\n", sep = "")
+  cat("using", length(object$LDA), "PLS-dimensions and priors:", object$LDA[[1]]$prior, "\n")
 }
 
 

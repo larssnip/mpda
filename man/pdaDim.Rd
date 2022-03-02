@@ -4,8 +4,16 @@
 \alias{pdaDim}
 \title{Finding optimal dimensionality in pda}
 \usage{
-pdaDim(y, X, reg = 0.5, prior = NULL, max.dim = NULL, selected = NULL,
-  n.seg = 10, verbose = TRUE)
+pdaDim(
+  y,
+  X,
+  reg = 0.5,
+  prior = NULL,
+  max.dim = NULL,
+  selected = NULL,
+  n.seg = 10,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{y}{Vector of responses, must be a factor with exactly 2 levels.}
@@ -57,9 +65,9 @@ The argument \code{selected} is used for variable selection, and just passed on 
 }
 \examples{
 data(microbiome)
-y <- microbiome[1:40,1]
-X <- as.matrix(microbiome[1:40,-1])
-lst <- pdaDim(y,X,reg=0.1,prior=c(0.5,0.5),max.dim=10)
+y <- microbiome[1:40, 1]
+X <- as.matrix(microbiome[1:40, -1])
+lst <- pdaDim(y, X, reg = 0.1, prior = c(0.5,0.5), max.dim = 10)
 
 }
 \references{

@@ -43,9 +43,9 @@ are trained to their optimal dimensionality.
 data(poems)
 y <- poems[,1]
 X <- as.matrix(poems[,-1])
-mp.trn <- mpda(y,X,reg=0.5,prior=c(1,1,1),max.dim=3)
+mp.trn <- mpda(y, X, reg = 0.5, prior = c(1,1,1), max.dim = 3)
 lst <- predict(mp.trn)
-print(table(y,lst$Classifications))
+print(table(y, lst$Classifications))
 
 }
 \seealso{

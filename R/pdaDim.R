@@ -47,9 +47,9 @@
 #'
 #' @examples
 #' data(microbiome)
-#' y <- microbiome[1:40,1]
-#' X <- as.matrix(microbiome[1:40,-1])
-#' lst <- pdaDim(y,X,reg=0.1,prior=c(0.5,0.5),max.dim=10)
+#' y <- microbiome[1:40, 1]
+#' X <- as.matrix(microbiome[1:40, -1])
+#' lst <- pdaDim(y, X, reg = 0.1, prior = c(0.5,0.5), max.dim = 10)
 #'
 #' @importFrom pls plsr
 #' @importFrom MASS lda qda
@@ -57,60 +57,60 @@
 #'
 #' @export pdaDim
 #'
-pdaDim <- function( y, X, reg=0.5, prior=NULL, max.dim=NULL, selected=NULL, n.seg=10, verbose=TRUE ){
-  if( verbose ) cat( "pdaDim:\n" )
-  N <- nrow( X )
-  P <- ncol( X )
-  if( !is.null( selected ) ) P <- sum( selected )
-  if( is.null( max.dim ) ) max.dim <- min( N, P )
-  max.dim <- min( N, P, max.dim )
-  y <- factor( y )
-  ixx <- order( y )
+pdaDim <- function(y, X, reg = 0.5, prior = NULL, max.dim = NULL, selected = NULL, n.seg = 10, verbose = TRUE){
+  if(verbose) cat("pdaDim:\n")
+  N <- nrow(X)
+  P <- ncol(X)
+  if(!is.null(selected)) P <- sum(selected)
+  if(is.null(max.dim)) max.dim <- min(N, P)
+  max.dim <- min(N, P, max.dim)
+  y <- factor(y)
+  ixx <- order(y)
   ys <- y[ixx]
   Xs <- X[ixx,,drop=F]
-  seg <- rep( 1:n.seg, length.out=N )
+  seg <- rep(1:n.seg, length.out = N)
 
   # ensuring max.dim is small enough for cross-validation
-  for( i in 1:n.seg ){
-    idx <- which( seg == i )
+  for(i in 1:n.seg){
+    idx <- which(seg == i)
     ys.trn <- ys[-idx]
-    Xs.trn <- Xs[-idx,,drop=F]
-    md <- min( nrow(Xs.trn), ncol(Xs.trn) )
-    if( md < max.dim ){
+    Xs.trn <- Xs[-idx, , drop = F]
+    md <- min(nrow(Xs.trn), ncol(Xs.trn))
+    if(md < max.dim){
       max.dim <- md
-      warning( "max.dim is too large for cross-validation, set to ", max.dim, "\n" )
+      warning("max.dim is too large for cross-validation, set to ", max.dim, "\n")
     }
   }
 
   # the cross-validation
-  if( verbose ) cat( "  cross-validation...\n" )
-  correct.mat <- matrix( rep( FALSE, N*max.dim ), nrow=N )
-  for( i in 1:n.seg ){
-    idx <- which( seg == i )
+  if(verbose) cat("  cross-validation...\n")
+  correct.mat <- matrix(rep(FALSE, N*max.dim), nrow = N)
+  for(i in 1:n.seg){
+    idx <- which(seg == i)
     ys.tst <- ys[idx]
-    Xs.tst <- Xs[idx,,drop=F]
+    Xs.tst <- Xs[idx, , drop = F]
     ys.trn <- ys[-idx]
-    Xs.trn <- Xs[-idx,,drop=F]
-    px <- pda( ys.trn, Xs.trn, prior=prior, max.dim=max.dim, selected=selected )
-    lst <- predict( px, Xs.tst )
-    for( k in 1:length( lst ) ){
+    Xs.trn <- Xs[-idx, , drop = F]
+    px <- pda(ys.trn, Xs.trn, prior = prior, max.dim = max.dim, selected = selected)
+    lst <- predict(px, Xs.tst)
+    for(k in 1:length(lst)){
       correct.mat[idx,k] <- (lst[[k]]$Classifications == ys.tst)
     }
   }
-  acc <- colMeans( correct.mat )
-  idx.dim <- which( acc == max( acc ) )[1]
+  acc <- colMeans(correct.mat)
+  idx.dim <- which(acc == max(acc))[1]
   opt.dim <- idx.dim
-  if( verbose ) cat( "   maximum accuracy", format( acc[opt.dim], digits=4 ), "at", opt.dim, "dimensions...\n" )
-  if( opt.dim > 1 ){
-    for( j in seq( (idx.dim-1), 1, -1 ) ){
-      contig.tab <- table( factor( correct.mat[,idx.dim], levels=c(FALSE,TRUE) ),
-                           factor( correct.mat[,j], levels=c(FALSE,TRUE) ) )
-      tst <- mcnemar.test( contig.tab )
-      if( tst$p.value > reg ) opt.dim <- j    # continue with smaller dimension
+  if(verbose) cat("   maximum accuracy", format(acc[opt.dim], digits = 4), "at", opt.dim, "dimensions...\n")
+  if(opt.dim > 1){
+    for(j in seq((idx.dim-1), 1, -1)){
+      contig.tab <- table(factor(correct.mat[,idx.dim], levels = c(FALSE, TRUE)),
+                          factor(correct.mat[,j], levels = c(FALSE, TRUE)))
+      tst <- mcnemar.test(contig.tab)
+      if(tst$p.value > reg) opt.dim <- j    # continue with smaller dimension
     }
   }
-  if( verbose ) cat( "   selected accuracy", format( acc[opt.dim], digits=4 ), "at", opt.dim, "dimensions\n" )
-  pdim <- list( Dimension=opt.dim, Corrects=correct.mat )
+  if(verbose) cat("   selected accuracy", format(acc[opt.dim], digits = 4), "at", opt.dim, "dimensions\n")
+  pdim <- list(Dimension = opt.dim, Corrects = correct.mat)
 
-  return( pdim )
+  return(pdim)
 }

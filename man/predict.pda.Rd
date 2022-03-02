@@ -30,9 +30,9 @@ model.
 \examples{
 data(microbiome)
 y <- microbiome[1:40,1]
-X <- as.matrix(microbiome[1:40,-1])
-p.trn <- pda(y[-1],X[-1,],prior=c(0.5,0.5),max.dim=8)    # leaving out sample 1 before training
-lst <- predict(p.trn,newdata=X[1,,drop=FALSE])           # predicting sample 1
+X <- as.matrix(microbiome[1:40, -1])
+p.trn <- pda(y[-1], X[-1,], prior = c(0.5,0.5), max.dim = 8)    # leaving out sample 1 before training
+lst <- predict(p.trn, newdata = X[1, , drop = FALSE])           # predicting sample 1
 
 
 }

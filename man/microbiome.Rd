@@ -4,9 +4,11 @@
 \name{microbiome}
 \alias{microbiome}
 \title{Human Microbiome data}
-\format{A data set of 100 samples. The first column \code{Body.fluid} is a vector of class labels
+\format{
+A data set of 100 samples. The first column \code{Body.fluid} is a vector of class labels
 for 5 different body-fluids/sites.
-The remaining columns is a predictor matrix \code{X} with 1746 predictor variables.}
+The remaining columns is a predictor matrix \code{X} with 1746 predictor variables.
+}
 \usage{
 data(microbiome)
 }

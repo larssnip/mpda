@@ -54,64 +54,65 @@
 #' data(poems)
 #' y <- poems[,1]
 #' X <- as.matrix(poems[,-1])
-#' mp.trn <- mpda(y,X,prior=c(1,1,1),max.dim=10)
+#' mp.trn <- mpda(y, X, prior = c(1,1,1), max.dim = 10)
 #'
 #' @importFrom pls plsr
 #' @importFrom MASS lda
 #'
 #' @export mpda
 #'
-mpda <- function( y, X, reg=0.5, prior=NULL, selected=NULL, max.dim=NULL, n.seg=10, verbose=TRUE ){
-  if( verbose ) cat( "mdpa: " )
-  N <- nrow( X )
-  P <- ncol( X )
-  if( is.null( max.dim ) ) max.dim <- min( N, P )
-  if( !is.factor(y) ) y <- factor( y )
-  lev <- levels( y )
-  L <- length( lev )
+mpda <- function(y, X, reg = 0.5, prior = NULL, selected = NULL, max.dim = NULL, n.seg = 10, verbose = TRUE){
+  if(verbose) cat("mdpa: ")
+  N <- nrow(X)
+  P <- ncol(X)
+  if(is.null(max.dim)) max.dim <- min(N, P)
+  if(!is.factor(y)) y <- factor(y)
+  lev <- levels(y)
+  L <- length(lev)
   N.pairs <- L*(L-1)/2
-  if( L < 3 ) stop( "Cannot have less than 3 factor levels in mpda, use pda for 2-class classifications" )
-  if( verbose ) cat( "Response with", L, "levels:", lev, "\n" )
-  if( is.null( prior) ){
-    prior <- as.numeric( table( y )/length( y ) )
+  if(L < 3) stop("Cannot have less than 3 factor levels in mpda, use pda for 2-class classifications")
+  if(verbose) cat("Response with", L, "levels:", lev, "\n")
+  if(is.null(prior)){
+    prior <- as.numeric(table(y)/length(y))
   } else {
-    if( length( prior ) != L ) stop( "Must have a prior value for each factor level" )
-    prior <- prior/sum( prior )
-    names( prior ) <- lev
-    if( verbose ) cat( "The priors:", prior, "\n" )
+    if(length(prior) != L) stop("Must have a prior value for each factor level")
+    prior <- prior/sum(prior)
+    names(prior) <- lev
+    if(verbose) cat("The priors:", prior, "\n")
   }
-  if( !is.null( selected ) ){
-    if( nrow( selected ) != N.pairs ) stop( "Matrix selected must have one row for each factor level pair in selected" )
-    if( ncol( selected ) != P ) stop( "Matrix selected must have the same number of columns as X" )
+  if(!is.null(selected)){
+    if(nrow(selected) != N.pairs) stop("Matrix selected must have one row for each factor level pair in selected")
+    if(ncol(selected) != P) stop("Matrix selected must have the same number of columns as X")
   }
 
   cc <- 0
   selection <- NULL
-  mpda.mod <- vector( "list", N.pairs )
-  for( i in 1:(L-1) ){
-    for( j in (i+1):L ){
+  mpda.mod <- vector("list", N.pairs)
+  for(i in 1:(L-1)){
+    for(j in (i+1):L){
       cc <- cc + 1
-      if( verbose ) cat( "   fitting", lev[i], "versus", lev[j], "...\n" )
-      idx <- which( y==lev[i] | y==lev[j] )
-      yy <- factor( y[idx], levels=c(lev[i], lev[j]) )
+      if(verbose) cat("   fitting", lev[i], "versus", lev[j], "...\n")
+      idx <- which(y == lev[i] | y == lev[j])
+      yy <- factor(y[idx], levels = c(lev[i], lev[j]))
       XX <- X[idx,]
-      md <- min( nrow(XX), ncol(XX), max.dim )
-      if( !is.null( selected ) ){
+      md <- min(nrow(XX), ncol(XX), max.dim)
+      if(!is.null(selected)){
         selection <- selected[cc,]
-        md <- min( md, sum( selection ) )
+        md <- min(md, sum(selection))
       }
-      if( reg > 0 ){
-        lst <- pdaDim( yy, XX, reg=reg, prior=prior[c(i,j)], max.dim=md, selected=selection, n.seg=n.seg, verbose=F )
+      if(reg > 0){
+        lst <- pdaDim(yy, XX, reg = reg, prior = prior[c(i,j)], max.dim = md,
+                      selected = selection, n.seg = n.seg, verbose = F)
         md <- lst$Dimension
       }
-      pda.mod <- pda( yy, XX, prior=prior[c(i,j)], max.dim=md, selected=selection )
+      pda.mod <- pda(yy, XX, prior = prior[c(i,j)], max.dim = md, selected = selection)
       mpda.mod[[cc]] <- pda.mod
     }
   }
-  class( mpda.mod ) <- c( "mpda", "list" )
-  attr( mpda.mod, "X" ) <- X
-  attr( mpda.mod, "Levels" ) <- lev
-  return( mpda.mod )
+  class(mpda.mod) <- c("mpda", "list")
+  attr(mpda.mod, "X") <- X
+  attr(mpda.mod, "Levels") <- lev
+  return(mpda.mod)
 }
 
 
@@ -154,23 +155,23 @@ mpda <- function( y, X, reg=0.5, prior=NULL, selected=NULL, max.dim=NULL, n.seg=
 #'
 #' @method plot mpda
 #' @export
-plot.mpda <- function( x, y=NULL, col=c("tan3","slategray3"), pch=15, legend.pos="bottomright",
-                      xlab="PLS dimension 1", ylab="PLS dimension 2", ... ){
-  N <- length( x )
-  p.rows <- floor( sqrt(N) )
-  p.cols <- ceiling( N/p.rows )
-  par( mfrow=c( p.rows, p.cols ) )
-  for( i in 1:N ){
-    plot( x[[i]], col=col, pch=pch, legend.pos=legend.pos, xlab=xlab, ylab=ylab )
+plot.mpda <- function(x, y = NULL, col = c("tan3","slategray3"), pch = 15, legend.pos = "bottomright",
+                      xlab = "PLS dimension 1", ylab = "PLS dimension 2", ...){
+  N <- length(x)
+  p.rows <- floor(sqrt(N))
+  p.cols <- ceiling(N/p.rows)
+  par(mfrow = c(p.rows, p.cols))
+  for(i in 1:N){
+    plot(x[[i]], col = col, pch = pch, legend.pos = legend.pos, xlab = xlab, ylab = ylab)
   }
 }
 
 #' @rdname plot.mpda
 #' @method summary mpda
 #' @export
-summary.mpda <- function( object, ... ){
-  y <- unique( unlist( sapply( object, function(x){attr(x,"Classes")} ) ) )
-  cat( "Fitted mpda model with responses:", y, "\n" )
+summary.mpda <- function(object, ...){
+  y <- unique(unlist(sapply(object, function(x){attr(x,"Classes")})))
+  cat("Fitted mpda model with responses:", y, "\n")
 }
 
 
@@ -215,34 +216,34 @@ summary.mpda <- function( object, ... ){
 #' data(poems)
 #' y <- poems[,1]
 #' X <- as.matrix(poems[,-1])
-#' mp.trn <- mpda(y,X,reg=0.5,prior=c(1,1,1),max.dim=3)
+#' mp.trn <- mpda(y, X, reg = 0.5, prior = c(1,1,1), max.dim = 3)
 #' lst <- predict(mp.trn)
-#' print(table(y,lst$Classifications))
+#' print(table(y, lst$Classifications))
 #'
 #' @importFrom stats predict
 #'
 #' @method predict mpda
 #' @export
-predict.mpda <- function( object, newdata=NULL, ... ){
-  if( is.null( newdata ) ) newdata <- attr( object, "X" )
-  N <- length( object )
-  lev <- attr( object, "Levels" )
-  L <- length( lev )
-  Post.means <- matrix( 0, nrow=nrow( newdata ), ncol=L )
-  colnames( Post.means ) <- lev
-  rownames( Post.means ) <- rownames( newdata )
-  for( i in 1:length( object ) ){
-    lst <- predict( object[[i]], newdata=newdata )
-    n <- length( lst )
+predict.mpda <- function(object, newdata = NULL, ...){
+  if(is.null(newdata)) newdata <- attr(object, "X")
+  N <- length(object)
+  lev <- attr(object, "Levels")
+  L <- length(lev)
+  Post.means <- matrix(0, nrow = nrow(newdata), ncol = L)
+  colnames(Post.means) <- lev
+  rownames(Post.means) <- rownames(newdata)
+  for(i in 1:length(object)){
+    lst <- predict(object[[i]], newdata = newdata)
+    n <- length(lst)
     pm <- lst[[n]]$Posteriors
-    idx <- which( lev == colnames( pm )[1] )
-    Post.means[,idx] <- Post.means[,idx] + pm[,1]
-    idx <- which( lev == colnames( pm )[2] )
-    Post.means[,idx] <- Post.means[,idx] + pm[,2]
+    idx <- which(lev == colnames(pm)[1])
+    Post.means[,idx] <- Post.means[, idx] + pm[, 1]
+    idx <- which(lev == colnames(pm)[2])
+    Post.means[,idx] <- Post.means[, idx] + pm[, 2]
   }
   Post.means <- Post.means / (L-1)
-  idx <- apply( Post.means, 1, function(x){which(x==max(x))[1]} )
+  idx <- apply(Post.means, 1, function(x){which(x == max(x))[1]})
   pred <- lev[idx]
-  mpda.lst <- list( Classifications=pred, Post.means=Post.means )
-  return( mpda.lst )
+  mpda.lst <- list(Classifications = pred, Post.means = Post.means)
+  return(mpda.lst)
 }

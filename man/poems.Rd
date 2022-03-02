@@ -4,8 +4,10 @@
 \name{poems}
 \alias{poems}
 \title{Poetry data}
-\format{A data set of 28 samples. The first column \code{Author} is a vector of class labels
-and the remaining columns is a predictor matrix \code{X} with 30 predictor variables.}
+\format{
+A data set of 28 samples. The first column \code{Author} is a vector of class labels
+and the remaining columns is a predictor matrix \code{X} with 30 predictor variables.
+}
 \usage{
 data(poems)
 }

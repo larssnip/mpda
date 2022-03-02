@@ -4,8 +4,18 @@
 \alias{mEliminator}
 \title{The Eliminator for mpda}
 \usage{
-mEliminator(y, X, reg1 = 0.5, reg2 = 1, prior = NULL, max.dim = NULL,
-  frac = 0.25, vip.lim = 1, n.seg = 10, verbose = TRUE)
+mEliminator(
+  y,
+  X,
+  reg1 = 0.5,
+  reg2 = 1,
+  prior = NULL,
+  max.dim = NULL,
+  frac = 0.25,
+  vip.lim = 1,
+  n.seg = 10,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{y}{Vector of responses, a factor of exact 2 levels.}
@@ -58,12 +68,12 @@ get a more stable selection, at the potential cost of elimination too much.
 \examples{
 data(poems)
 y <- poems[,1]
-X <- as.matrix(poems[,-1])
+X <- as.matrix(poems[, -1])
 # Variable selection
-S <- mEliminator(y,X,max.dim=10)
+S <- mEliminator(y, X, max.dim = 10)
 
 # Fitting model with selection information
-mp.trn <- mpda(y,X,prior=c(1,1,1),selected=S,max.dim=10)
+mp.trn <- mpda(y, X, prior = c(1,1,1), selected = S, max.dim = 10)
 # Predicting...
 predict(mp.trn)
 

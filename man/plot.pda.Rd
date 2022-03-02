@@ -3,12 +3,18 @@
 \name{plot.pda}
 \alias{plot.pda}
 \alias{summary.pda}
-\alias{summary.pda}
 \title{Plotting and summary of pda object}
 \usage{
-\method{plot}{pda}(x, y = NULL, col = c("tan3", "slategray3"), pch = c(15,
-  15), legend.pos = "topright", xlab = "PLS dimension 1",
-  ylab = "PLS dimension 2", ...)
+\method{plot}{pda}(
+  x,
+  y = NULL,
+  col = c("tan3", "slategray3"),
+  pch = c(15, 15),
+  legend.pos = "topright",
+  xlab = "PLS dimension 1",
+  ylab = "PLS dimension 2",
+  ...
+)
 
 \method{summary}{pda}(object, ...)
 }

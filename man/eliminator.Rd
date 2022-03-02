@@ -4,8 +4,17 @@
 \alias{eliminator}
 \title{The Eliminator algorithm}
 \usage{
-eliminator(y, X, reg = 0.5, prior = NULL, max.dim = NULL, frac = 0.25,
-  vip.lim = 1, n.seg = 10, verbose = TRUE)
+eliminator(
+  y,
+  X,
+  reg = 0.5,
+  prior = NULL,
+  max.dim = NULL,
+  frac = 0.25,
+  vip.lim = 1,
+  n.seg = 10,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{y}{Vector of responses, a factor of exact 2 levels.}
@@ -74,9 +83,9 @@ to your \code{max.dim}, increase its value slightly and re-run.
 }
 \examples{
 data(microbiome)
-y <- microbiome[1:40,1]
-X <- as.matrix(microbiome[1:40,-1])
-lst <- eliminator(y,X,max.dim=10)
+y <- microbiome[1:40, 1]
+X <- as.matrix(microbiome[1:40, -1])
+lst <- eliminator(y, X, max.dim = 10)
 print(lst$Elimination)
 # Seems like iteration 23 is the place to stop, since a significant drop
 # in performance is found at iteration 24.

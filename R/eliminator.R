@@ -63,9 +63,9 @@
 #'
 #' @examples
 #' data(microbiome)
-#' y <- microbiome[1:40,1]
-#' X <- as.matrix(microbiome[1:40,-1])
-#' lst <- eliminator(y,X,max.dim=10)
+#' y <- microbiome[1:40, 1]
+#' X <- as.matrix(microbiome[1:40, -1])
+#' lst <- eliminator(y, X, max.dim = 10)
 #' print(lst$Elimination)
 #' # Seems like iteration 23 is the place to stop, since a significant drop
 #' # in performance is found at iteration 24.
@@ -76,76 +76,76 @@
 #'
 #' @export eliminator
 #'
-eliminator <- function( y, X, reg=0.5, prior=NULL, max.dim=NULL,
-                        frac=0.25, vip.lim=1.0, n.seg=10, verbose=TRUE ){
-  if( verbose ) cat( "The Eliminator:\n" )
-  N <- nrow( X )
-  if( n.seg > N ) stop( "Must use n.seg less than nrow(X)!" )
-  P <- ncol( X )
-  if( P==1 ) stop( "Meaningless to perform variable-selection with 1 variable!" )
-  y <- factor( y )
-  if( nlevels( y ) > 2 ) stop( "Response y must be a factor of exactly 2 levels" )
-  y <- as.integer( y )
+eliminator <- function( y, X, reg = 0.5, prior = NULL, max.dim = NULL,
+                        frac = 0.25, vip.lim = 1.0, n.seg = 10, verbose = TRUE ){
+  if(verbose) cat("The Eliminator:\n")
+  N <- nrow(X)
+  if(n.seg > N) stop("Must use n.seg less than nrow(X)!")
+  P <- ncol(X)
+  if(P == 1) stop("Meaningless to perform variable-selection with 1 variable!")
+  y <- factor(y)
+  if( nlevels(y) > 2 ) stop("Response y must be a factor of exactly 2 levels")
+  y <- as.integer(y)
 
   # All variables
   selected <- 1:P
-  pdim <- pdaDim( y, X, reg=reg, prior=prior, max.dim=max.dim, n.seg=n.seg, verbose=F )
-  c.max <- pdim$Corrects[,pdim$Dimension]
-  if( verbose ) cat( "   full model has", P, "variables, accuracy =",
-                     format( sum(c.max)/length(c.max), digits=4 ), "using", pdim$Dimension, "dimensions\n" )
-  px <- pda( y, X, max.dim=pdim$Dimension )
-  vips <- vipCriterion( px$PLS, pdim$Dimension )
-  idx.unimportant <- which( vips < vip.lim )
-  eliminate <- (length( idx.unimportant ) > 0) # TRUE if there are variables with VIP below vip.lim
-  N.vars <- length( selected )
-  correct <- sum( c.max )
+  pdim <- pdaDim(y, X, reg = reg, prior = prior, max.dim = max.dim, n.seg = n.seg, verbose = F)
+  c.max <- pdim$Corrects[, pdim$Dimension]
+  if(verbose) cat("   full model has", P, "variables, accuracy =",
+                  format(sum(c.max)/length(c.max), digits = 4), "using", pdim$Dimension, "dimensions\n" )
+  px <- pda(y, X, max.dim = pdim$Dimension)
+  vips <- vipCriterion(px$PLS, pdim$Dimension)
+  idx.unimportant <- which(vips < vip.lim)
+  eliminate <- (length(idx.unimportant) > 0) # TRUE if there are variables with VIP below vip.lim
+  N.vars <- length(selected)
+  correct <- sum(c.max)
   pvalues <- 1
-  select.mat <- matrix( T, nrow=1, ncol=P )
+  select.mat <- matrix(T, nrow = 1, ncol = P)
 
   # The elimination
-  zerow <- matrix( FALSE, nrow=1, ncol=P, dimnames=NULL )
-  while( eliminate ){
+  zerow <- matrix(FALSE, nrow = 1, ncol = P, dimnames = NULL)
+  while(eliminate){
     # Eliminating
-    n <- ceiling( frac*length( idx.unimportant ) )
-    ixx <- order( vips )
+    n <- ceiling(frac*length(idx.unimportant))
+    ixx <- order(vips)
     selected <- selected[-ixx[1:n]]
-    XX <- X[,selected,drop=F]
-    PP <- ncol( XX )
+    XX <- X[, selected, drop = F]
+    PP <- ncol(XX)
 
     # Computing accuracy based on reduced variable set
-    pdim <- pdaDim( y, XX, reg=reg, prior=prior, max.dim=max.dim, n.seg=n.seg, verbose=F )
+    pdim <- pdaDim(y, XX, reg = reg, prior = prior, max.dim = max.dim, n.seg = n.seg, verbose = F)
     crrct <- pdim$Corrects[,pdim$Dimension]
-    if( sum( crrct ) >= sum( c.max ) ){
+    if(sum(crrct) >= sum(c.max)){
       c.max <- crrct
       pvl <- 1
     } else {
-      ct <- table( factor( c.max, levels=c(FALSE,TRUE) ), factor( crrct, levels=c(FALSE,TRUE) ) )
-      tst <- mcnemar.test( ct )
+      ct <- table(factor(c.max, levels = c(FALSE,TRUE)), factor(crrct, levels = c(FALSE,TRUE)))
+      tst <- mcnemar.test(ct)
       pvl <- tst$p.value
     }
-    N.vars <- c( N.vars, PP )
-    correct <- c( correct, sum( crrct ) )
-    pvalues <- c( pvalues, pvl )
+    N.vars <- c(N.vars, PP)
+    correct <- c(correct, sum(crrct))
+    pvalues <- c(pvalues, pvl)
     newrow <- zerow
     newrow[selected] <- TRUE
-    select.mat <- rbind( select.mat, newrow )
-    if( verbose ) cat( "   eliminated to", PP, "variables, accuracy =",
-                         format( sum(crrct)/length(crrct), digits=4 ), "using",
-                         pdim$Dimension, "dimensions\n" )
+    select.mat <- rbind(select.mat, newrow)
+    if(verbose) cat("   eliminated to", PP, "variables, accuracy =",
+                    format(sum(crrct)/length(crrct), digits = 4), "using",
+                    pdim$Dimension, "dimensions\n")
 
     # Computing VIPs for the reduced model, for next step
-    px <- pda( y, XX, max.dim=pdim$Dimension )
-    vips <- vipCriterion( px$PLS, pdim$Dimension )
-    idx.unimportant <- which( vips < vip.lim )
-    eliminate <- (length( idx.unimportant ) > 0) & (PP > 1)
+    px <- pda(y, XX, max.dim = pdim$Dimension)
+    vips <- vipCriterion(px$PLS, pdim$Dimension)
+    idx.unimportant <- which(vips < vip.lim)
+    eliminate <- (length(idx.unimportant) > 0) & (PP > 1)
   }
-  colnames( select.mat ) <- colnames( X )
-  rownames( select.mat ) <- paste( "Iteration", 1:nrow( select.mat ) )
-  emat <- matrix( c( N.vars, correct/length(y), pvalues ), ncol=3, byrow=F )
-  colnames( emat ) <- c( "N.variables", "Accuracy", "P.value" )
-  rownames( emat ) <- rownames( select.mat )
+  colnames(select.mat) <- colnames(X)
+  rownames(select.mat) <- paste("Iteration", 1:nrow(select.mat))
+  emat <- matrix(c(N.vars, correct/length(y), pvalues), ncol = 3, byrow = F)
+  colnames(emat) <- c("N.variables", "Accuracy", "P.value")
+  rownames(emat) <- rownames(select.mat)
 
-  return( list( Elimination=emat, Selected=select.mat ) )
+  return(list(Elimination = emat, Selected = select.mat))
 }
 
 
@@ -195,57 +195,57 @@ eliminator <- function( y, X, reg=0.5, prior=NULL, max.dim=NULL,
 #' @examples
 #' data(poems)
 #' y <- poems[,1]
-#' X <- as.matrix(poems[,-1])
+#' X <- as.matrix(poems[, -1])
 #' # Variable selection
-#' S <- mEliminator(y,X,max.dim=10)
+#' S <- mEliminator(y, X, max.dim = 10)
 #'
 #' # Fitting model with selection information
-#' mp.trn <- mpda(y,X,prior=c(1,1,1),selected=S,max.dim=10)
+#' mp.trn <- mpda(y, X, prior = c(1,1,1), selected = S, max.dim = 10)
 #' # Predicting...
 #' predict(mp.trn)
 #'
 #' @export mEliminator
 #'
-mEliminator <- function( y, X, reg1=0.5, reg2=1.0, prior=NULL, max.dim=NULL,
-                         frac=0.25, vip.lim=1.0, n.seg=10, verbose=TRUE ){
-  if( verbose ) cat( "mEliminator: " )
-  N <- nrow( X )
-  P <- ncol( X )
-  if( !is.factor(y) ) y <- factor( y )
-  lev <- levels( y )
-  L <- length( lev )
+mEliminator <- function(y, X, reg1=0.5, reg2=1.0, prior=NULL, max.dim=NULL,
+                        frac=0.25, vip.lim=1.0, n.seg=10, verbose=TRUE){
+  if(verbose) cat("mEliminator: ")
+  N <- nrow(X)
+  P <- ncol(X)
+  if(!is.factor(y)) y <- factor(y)
+  lev <- levels(y)
+  L <- length(lev)
   N.pairs <- L*(L-1)/2
-  if( L < 3 ) stop( "mEliminator is made for multi-level problems, use the eliminator for 2-level problems" )
-  if( verbose ) cat( "Response with", L, "levels:", lev, "\n" )
-  if( is.null( prior) ){
-    prior <- as.numeric( table( y )/length( y ) )
+  if(L < 3) stop( "mEliminator is made for multi-level problems, use the eliminator for 2-level problems" )
+  if(verbose) cat("Response with", L, "levels:", lev, "\n")
+  if(is.null(prior)){
+    prior <- as.numeric(table(y)/length(y))
   } else {
-    if( length( prior ) != L ) stop( "Must have a prior value for each factor level" )
-    prior <- prior/sum( prior )
-    names( prior ) <- lev
-    if( verbose ) cat( "The priors:", prior, "\n" )
+    if(length(prior) != L) stop("Must have a prior value for each factor level")
+    prior <- prior/sum(prior)
+    names(prior) <- lev
+    if(verbose) cat("The priors:", prior, "\n")
   }
 
   cc <- 0
-  Selected <- matrix( TRUE, nrow=N.pairs, ncol=P )
-  for( i in 1:(L-1) ){
-    for( j in (i+1):L ){
+  Selected <- matrix(TRUE, nrow = N.pairs, ncol=P)
+  for(i in 1:(L-1)){
+    for(j in (i+1):L){
       cc <- cc + 1
-      if( verbose ) cat( "Eliminating for", lev[i], "versus", lev[j], "...\n" )
-      idx <- which( y==lev[i] | y==lev[j] )
-      yy <- factor( y[idx], levels=c(lev[i], lev[j]) )
+      if(verbose) cat("Eliminating for", lev[i], "versus", lev[j], "...\n")
+      idx <- which(y == lev[i] | y == lev[j])
+      yy <- factor(y[idx], levels = c(lev[i], lev[j]))
       XX <- X[idx,]
-      md <- min( nrow(XX), ncol(XX), max.dim )
-      lst <- eliminator( yy, XX, reg=reg1, prior=prior[c(i,j)], max.dim=md,
-                         frac=frac, vip.lim=vip.lim, n.seg=n.seg, verbose=verbose )
-      idx.max <- max( which( lst$Elimination[,2] == max( lst$Elimination[,2] ) ) )
-      idx.brk <- max( which( lst$Elimination[idx.max:nrow( lst$Elimination ),3] >= reg2 ) )
+      md <- min(nrow(XX), ncol(XX), max.dim)
+      lst <- eliminator(yy, XX, reg = reg1, prior = prior[c(i,j)], max.dim = md,
+                        frac = frac, vip.lim = vip.lim, n.seg = n.seg, verbose = verbose )
+      idx.max <- max(which(lst$Elimination[,2] == max(lst$Elimination[,2])))
+      idx.brk <- max(which(lst$Elimination[idx.max:nrow(lst$Elimination),3] >= reg2))
       idx.sel <- idx.max + idx.brk - 1
       Selected[cc,] <- lst$Selected[idx.sel,]
-      if( verbose ) cat( "Selected", sum( Selected[cc,] ), "variables\n" )
+      if(verbose) cat("Selected", sum(Selected[cc,]), "variables\n")
     }
   }
-  return( Selected )
+  return(Selected)
 }
 
 

@@ -57,16 +57,16 @@ in \code{\link{mpda}}.
 }
 \examples{
 data(microbiome)
-y <- microbiome[1:40,1]
-X <- as.matrix(microbiome[1:40,-1])
-m.trn <- pda(y,X,prior=c(0.5,0.5),max.dim=10)
+y <- microbiome[1:40, 1]
+X <- as.matrix(microbiome[1:40, -1])
+m.trn <- pda(y, X, prior = c(0.5,0.5), max.dim = 10)
 
 data(poems)
-y <- factor(poems[11:28,1],levels=c("Blake","Eliot"))
-X <- as.matrix(poems[11:28,-1])
+y <- factor(poems[11:28,1], levels = c("Blake","Eliot"))
+X <- as.matrix(poems[11:28, -1])
 selection <- rep(FALSE,ncol(X))
 selection[c(1,5,9,15,21)] <- TRUE   # using letters a, e, i, o and u only
-p.trn <- pda(y,X,prior=c(1,1),selected=selection)
+p.trn <- pda(y, X, prior = c(1,1), selected = selection)
 
 }
 \seealso{

@@ -3,12 +3,18 @@
 \name{plot.mpda}
 \alias{plot.mpda}
 \alias{summary.mpda}
-\alias{summary.mpda}
 \title{Plotting and summary of mpda object}
 \usage{
-\method{plot}{mpda}(x, y = NULL, col = c("tan3", "slategray3"), pch = 15,
-  legend.pos = "bottomright", xlab = "PLS dimension 1",
-  ylab = "PLS dimension 2", ...)
+\method{plot}{mpda}(
+  x,
+  y = NULL,
+  col = c("tan3", "slategray3"),
+  pch = 15,
+  legend.pos = "bottomright",
+  xlab = "PLS dimension 1",
+  ylab = "PLS dimension 2",
+  ...
+)
 
 \method{summary}{mpda}(object, ...)
 }
