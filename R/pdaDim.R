@@ -86,6 +86,7 @@ pdaDim <- function(y, X, reg = 0.5, prior = NULL, max.dim = NULL, selected = NUL
   if(verbose) cat("  cross-validation...\n")
   correct.mat <- matrix(rep(FALSE, N*max.dim), nrow = N)
   for(i in 1:n.seg){
+    if(verbose) cat("   segment ", i, "out of", n.seg, "\n")
     idx <- which(seg == i)
     ys.tst <- ys[idx]
     Xs.tst <- Xs[idx, , drop = F]
